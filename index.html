@@ -25,7 +25,20 @@
 <body class="bg-light">
 
 <div id="app" class="container-fluid py-4">
-    <h2 class="mb-4 text-primary">Smart Loan & SIP Offset Calculator</h2>
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="text-primary m-0">Smart Loan & SIP Offset Calculator</h2>
+        
+        <div class="d-flex gap-2 align-items-center bg-white p-2 rounded shadow-sm border">
+            <span class="text-muted small fw-bold ms-2">Scenarios:</span>
+            <select class="form-select form-select-sm" style="width: 200px;" v-model="selectedScenario" @change="loadScenario">
+                <option value="">-- New/Unsaved --</option>
+                <option v-for="s in scenarios" :key="s.name" :value="s.name">{{ s.name }}</option>
+            </select>
+            <button class="btn btn-primary btn-sm" @click="saveScenario">Save</button>
+            <button class="btn btn-outline-danger btn-sm" v-if="selectedScenario" @click="deleteScenario">Delete</button>
+        </div>
+    </div>
 
     <ul class="nav nav-tabs mb-4" id="appTabs" role="tablist">
         <li class="nav-item" role="presentation">
@@ -47,7 +60,7 @@
                             <div class="row g-3">
                                 <div class="col-md-3">
                                     <label class="form-label">Sanctioned Loan (₹)</label>
-                                    <input type="number" class="form-control" v-model.number="inputs.loanAmount" @input="calculate">
+                                    <input type="number" class="form-control" v-model.number="inputs.loanAmount" @change="handleLoanAmountChange">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Annual Loan Rate (%)</label>
@@ -96,7 +109,7 @@
                             </div>
                             <div class="summary-card p-2 rounded mb-2">
                                 <small class="text-muted d-block">Actual Payoff Months</small>
-                                <strong>{{ summary.payoffMonths }} / {{ inputs.tenure }}</strong>
+                                <strong class="text-primary">{{ summary.payoffMonths }} / {{ inputs.tenure }}</strong>
                             </div>
                             <div class="summary-card p-2 rounded">
                                 <small class="text-muted d-block">Final SIP Corpus</small>
@@ -107,9 +120,12 @@
                 </div>
             </div>
 
-            <div class="d-flex justify-content-end mb-2 gap-2">
-                <button class="btn btn-outline-success btn-sm" @click="exportExcel">Export to Excel</button>
-                <button class="btn btn-outline-danger btn-sm" @click="exportPDF">Export to PDF</button>
+            <div class="d-flex justify-content-between mb-2">
+                <button class="btn btn-outline-secondary btn-sm" @click="resetSchedule">Reset Disbursal Schedule</button>
+                <div class="gap-2 d-flex">
+                    <button class="btn btn-outline-success btn-sm" @click="exportExcel">Export to Excel</button>
+                    <button class="btn btn-outline-danger btn-sm" @click="exportPDF">Export to PDF</button>
+                </div>
             </div>
 
             <div class="table-responsive table-container border shadow-sm rounded">
@@ -121,7 +137,7 @@
                             <th style="min-width: 120px;">Offset Dep. (Manual)</th>
                             <th style="min-width: 120px;">Prepay (Manual)</th>
                             <th>Cum. Disbursed</th>
-                            <th>SIP (Man + Off)</th>
+                            <th>SIP (Man+Off)</th>
                             <th>Offset Bal</th>
                             <th>Eff. Principal</th>
                             <th>Interest</th>
@@ -171,11 +187,11 @@
                     loanAmount: 5000000,
                     loanRate: 7.4,
                     tenure: 240,
-                    initialOffset: 0,
+                    initialOffset: 300000,
                     sipReturnRate: 12,
                     baseManualSip: 10000,
                     sipStepUp: 10,
-                    emiStepUp: 5
+                    emiStepUp: 0
                 },
                 schedule: [],
                 baseEmi: 0,
@@ -184,10 +200,13 @@
                     payoffMonths: 0,
                     finalCorpus: 0
                 },
-                chartInstance: null
+                chartInstance: null,
+                scenarios: [],
+                selectedScenario: ''
             }
         },
         mounted() {
+            this.loadScenariosList();
             this.initializeSchedule();
             this.calculate();
         },
@@ -200,13 +219,25 @@
                 return (pv * rate * Math.pow(1 + rate, nper)) / (Math.pow(1 + rate, nper) - 1);
             },
             initializeSchedule() {
-                // Generate 240 empty rows with default manual entries
+                // BUG FIX: Automatically set Month 1 disbursement to the full loan amount 
+                // so the calculator has the full debt to work with.
                 this.schedule = Array.from({ length: 240 }, (_, i) => ({
                     monthNo: i + 1,
-                    manualDisbursed: i === 0 ? 500000 : 0, // First month 10% default
+                    manualDisbursed: i === 0 ? this.inputs.loanAmount : 0, 
                     manualOffsetDeposit: 0,
                     manualPrepayment: 0
                 }));
+            },
+            resetSchedule() {
+                if(confirm("This will clear all manual inputs in the table. Continue?")) {
+                    this.initializeSchedule();
+                    this.calculate();
+                }
+            },
+            handleLoanAmountChange() {
+                // If you change the global loan amount, automatically update Month 1 to match
+                this.schedule[0].manualDisbursed = this.inputs.loanAmount;
+                this.calculate();
             },
             calculate() {
                 const monthlyLoanRate = (this.inputs.loanRate / 100) / 12;
@@ -230,19 +261,15 @@
                     let currentEmiLimit = this.baseEmi * Math.pow(1 + (this.inputs.emiStepUp/100), stepUpFactor);
 
                     row.cumDisbursed = prevCumDisbursed + row.manualDisbursed;
-                    
-                    // Effective Principal before interest is charged for the month
                     row.offsetBalance = prevOffset + row.manualOffsetDeposit;
                     
-                    // If loan is already paid off
-                    if (i > 0 && prevRemaining <= 0) {
+                    if (i > 0 && prevRemaining <= 0.01) {
                         row.effectivePrincipal = 0;
                         row.interest = 0;
                         row.emiPaid = 0;
                         row.principalPaid = 0;
                         row.remainingBalance = 0;
                     } else {
-                        // Math logic
                         let balToCalculateInterest = (i === 0 ? row.cumDisbursed : prevRemaining + row.manualDisbursed) - row.offsetBalance;
                         row.effectivePrincipal = Math.max(0, balToCalculateInterest);
                         row.interest = row.effectivePrincipal * monthlyLoanRate;
@@ -260,7 +287,6 @@
                     row.totalSip = currentSip;
                     row.totalCorpus = (prevCorpus * (1 + monthlySipRate)) + row.totalSip;
 
-                    // Update prev variables for next loop
                     prevCumDisbursed = row.cumDisbursed;
                     prevOffset = row.offsetBalance;
                     prevRemaining = row.remainingBalance;
@@ -273,6 +299,59 @@
                 
                 if(this.chartInstance) this.renderChart();
             },
+            
+            // --- SCENARIO MANAGEMENT (LOCALSTORAGE) ---
+            loadScenariosList() {
+                const saved = localStorage.getItem('loanScenarios');
+                if (saved) {
+                    this.scenarios = JSON.parse(saved);
+                }
+            },
+            saveScenario() {
+                let name = prompt("Enter a name for this scenario (e.g., 'Aggressive Offset'):", this.selectedScenario || "");
+                if (!name) return;
+                
+                let scenarioData = {
+                    name: name,
+                    inputs: JSON.parse(JSON.stringify(this.inputs)),
+                    schedule: JSON.parse(JSON.stringify(this.schedule))
+                };
+                
+                let index = this.scenarios.findIndex(s => s.name === name);
+                if (index !== -1) {
+                    this.scenarios[index] = scenarioData; // Overwrite
+                } else {
+                    this.scenarios.push(scenarioData);
+                }
+                
+                localStorage.setItem('loanScenarios', JSON.stringify(this.scenarios));
+                this.selectedScenario = name;
+            },
+            loadScenario() {
+                if (!this.selectedScenario) {
+                    this.initializeSchedule();
+                    this.calculate();
+                    return;
+                }
+                let scenario = this.scenarios.find(s => s.name === this.selectedScenario);
+                if (scenario) {
+                    this.inputs = JSON.parse(JSON.stringify(scenario.inputs));
+                    this.schedule = JSON.parse(JSON.stringify(scenario.schedule));
+                    this.calculate();
+                }
+            },
+            deleteScenario() {
+                if (!this.selectedScenario) return;
+                if (confirm(`Are you sure you want to delete '${this.selectedScenario}'?`)) {
+                    this.scenarios = this.scenarios.filter(s => s.name !== this.selectedScenario);
+                    localStorage.setItem('loanScenarios', JSON.stringify(this.scenarios));
+                    this.selectedScenario = '';
+                    this.initializeSchedule();
+                    this.calculate();
+                }
+            },
+
+            // --- VISUALIZATION & EXPORT ---
             renderChart() {
                 const ctx = document.getElementById('loanChart').getContext('2d');
                 if (this.chartInstance) {
@@ -310,7 +389,6 @@
                 });
             },
             exportExcel() {
-                // Strip out Vue reactivity proxies for SheetJS
                 const cleanData = JSON.parse(JSON.stringify(this.schedule));
                 const ws = XLSX.utils.json_to_sheet(cleanData);
                 const wb = XLSX.utils.book_new();
@@ -319,7 +397,7 @@
             },
             exportPDF() {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('l', 'mm', 'a4'); // Landscape for wide tables
+                const doc = new jsPDF('l', 'mm', 'a4'); 
                 
                 doc.setFontSize(16);
                 doc.text("Smart Loan & SIP Schedule", 14, 15);
