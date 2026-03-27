@@ -352,9 +352,6 @@
             this.loadScenariosList();
             this.initializeSchedule();
             this.calculate();
-            
-            // Safe resize listener to prevent 'this' context errors
-            window.addEventListener('resize', () => { this.refreshCharts(); });
         },
         methods: {
             formatCurrency(value) {
