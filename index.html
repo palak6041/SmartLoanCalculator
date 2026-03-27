@@ -210,19 +210,19 @@
                 <table class="table table-striped table-hover table-sm table-borderless mb-0 align-middle text-center" id="scheduleTable">
                     <thead>
                         <tr>
-                            <th style="border-top-left-radius: 0.75rem;">Mo</th>
-                            <th>Disbursed <small>(Man.)</small></th>
-                            <th>Off. Dep. <small>(Man.)</small></th>
-                            <th>Prepay <small>(Man.)</small></th>
-                            <th>Cum. Disb.</th>
-                            <th>SIP (Mo)</th>
-                            <th>Offset Bal</th>
-                            <th>Eff. Prin.</th>
-                            <th class="text-danger-light">Interest</th>
-                            <th>EMI Paid</th>
-                            <th>Prin. Paid</th>
-                            <th>Rem. Bal</th>
-                            <th class="text-success-light" style="border-top-right-radius: 0.75rem;">Total Corpus</th>
+                            <th style="border-top-left-radius: 0.75rem;">Month No.</th>
+                            <th>New Disbursement</th>
+                            <th>Offset Deposit</th>
+                            <th>Extra Prepayment</th>
+                            <th>Cumulative Disbursed</th>
+                            <th>Monthly SIP Input</th>
+                            <th>Offset A/C Balance</th>
+                            <th>Effective Principal</th>
+                            <th class="text-danger-light">Interest Charged</th>
+                            <th>Total EMI Paid</th>
+                            <th>Principal Repaid</th>
+                            <th>Remaining Balance</th>
+                            <th class="text-success-light" style="border-top-right-radius: 0.75rem;">Total SIP Wealth</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -433,8 +433,6 @@
 
             // --- VISUALIZATION ---
             showChart() {
-                // FIX: Added a slight delay so Bootstrap can change 'display:none' to 'display:block'
-                // before Chart.js tries to draw. Without this, Chart.js renders at 0px width.
                 setTimeout(() => {
                     this.renderChart();
                 }, 150);
@@ -466,7 +464,7 @@
                                 pointRadius: 0
                             },
                             {
-                                label: 'Total SIP Corpus (Wealth)',
+                                label: 'Total SIP Wealth',
                                 data: wealthData,
                                 borderColor: GREEN,
                                 backgroundColor: GREEN + '08',
@@ -525,7 +523,7 @@
 
                 doc.autoTable({
                     startY: 25,
-                    head: [['Month', 'Disb (Mo)', 'Cum. Disb', 'Prepay', 'Eff. Principal', 'Interest', 'EMI Paid', 'Rem. Bal', 'Total Corpus']],
+                    head: [['Month', 'New Disb.', 'Cum. Disb.', 'Prepayment', 'Eff. Principal', 'Interest', 'EMI Paid', 'Rem. Balance', 'SIP Wealth']],
                     body: tableData,
                     styles: { fontSize: 7, font: 'times' },
                     headStyles: { fillColor: [79, 70, 229], halign: 'center' },
