@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Loan & SIP Calculator</title>
+    <title>Smart Loan & SIP | Premium Dashboard</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     
@@ -12,156 +16,236 @@
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bundle.min.js"></script>
 
     <style>
-        .summary-card { background-color: #f8f9fa; border-left: 4px solid #0d6efd; }
-        .table-container { max-height: 600px; overflow-y: auto; }
-        th { position: sticky; top: 0; background-color: #e9ecef !important; z-index: 1; font-size: 0.85rem;}
-        td { font-size: 0.85rem; vertical-align: middle; }
-        .form-control-sm { min-width: 80px; }
+        :root {
+            --primary: #4f46e5; /* Indigo */
+            --primary-light: #e0e7ff;
+            --secondary: #64748b; /* Slate Gray */
+            --bg-body: #F9FAFB;
+            --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: var(--bg-body); 
+            color: #111827; 
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        /* Modern Cards */
+        .premium-card {
+            background: #fff;
+            border-radius: 1rem;
+            border: none;
+            box-shadow: var(--card-shadow);
+            padding: 1.5rem;
+            height: 100%;
+        }
+        .card-label { font-weight: 600; font-size: 0.85rem; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.05rem; margin-bottom: 0.5rem; display: block;}
+        
+        /* Inputs styling */
+        .form-control { border-color: #E5E7EB; border-radius: 0.5rem; padding: 0.6rem 0.75rem; font-size: 0.95rem;}
+        .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+        .form-control.minimal-input { border: 1px solid transparent; background: transparent; padding: 0.2rem; text-align: center; border-radius: 0.25rem;}
+        .form-control.minimal-input:hover { border-color: #E5E7EB; background: #fff;}
+        .form-control.minimal-input:focus { border-color: var(--primary); background: #fff;}
+
+        /* Modern Tabs (Pill style) */
+        .nav-pills { background: #fff; padding: 0.25rem; border-radius: 2rem; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
+        .nav-pills .nav-link { border-radius: 2rem; color: var(--secondary); padding: 0.6rem 1.5rem; font-weight: 500;}
+        .nav-pills .nav-link.active { background-color: var(--primary); color: #fff; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
+
+        /* Minimal Stat Widgets */
+        .stat-widget { padding: 1rem; border-radius: 0.75rem; border: 1px solid #F3F4F6;}
+        .stat-title { color: var(--secondary); font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; }
+        .stat-value { font-size: 1.25rem; font-weight: 700; color: #111827; }
+
+        /* Table minimal polish */
+        .table-container { max-height: 600px; overflow-y: auto; background: #fff; border-radius: 0.75rem; box-shadow: var(--card-shadow); border: none; }
+        .table { border-collapse: collapse; }
+        .table > thead > tr > th { 
+            position: sticky; top: 0; 
+            background-color: var(--primary) !important; color: #fff; 
+            z-index: 1; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; 
+            padding: 1rem 0.5rem; border: none; letter-spacing: 0.05em;
+        }
+        .table td { padding: 0.75rem 0.5rem; font-size: 0.85rem; vertical-align: middle; color: #374151; border-color: #F3F4F6; }
+        .table-striped > tbody > tr:nth-of-type(odd) > * { --bs-table-accent-bg: #F9FAFB;}
+        
+        /* Premium Buttons */
+        .btn { border-radius: 0.5rem; font-weight: 500; padding: 0.6rem 1rem; font-size: 0.9rem;}
+        .btn-primary { background-color: var(--primary); border-color: var(--primary); }
+        .btn-primary:hover { background-color: #4338ca; border-color: #4338ca; }
+        .btn-outline-primary { color: var(--primary); border-color: var(--primary); }
+        .btn-outline-primary:hover { background-color: var(--primary); color: #fff; }
+
+        /* Payoff highlight */
+        tr.highlight-payoff td { color: #fff; background-color: var(--success) !important; font-weight: 600;}
+        tr.highlight-payoff .minimal-input { color: #fff; }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-<div id="app" class="container-fluid py-4">
+<div id="app" class="container-fluid px-md-5 py-4">
     
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary m-0">Smart Loan & SIP Offset Calculator</h2>
+    <div class="row align-items-center mb-5 gx-4">
+        <div class="col-lg-6 col-md-12">
+            <h2 class="text-indigo m-0 fw-bold tracking-tight" style="color:var(--primary)">Smart Loan & Wealth Dashboard</h2>
+            <p class="text-secondary m-0">Dynamic calculator with Offset, Step-up, and SIP progression</p>
+        </div>
         
-        <div class="d-flex gap-2 align-items-center bg-white p-2 rounded shadow-sm border">
-            <span class="text-muted small fw-bold ms-2">Scenarios:</span>
-            <select class="form-select form-select-sm" style="width: 200px;" v-model="selectedScenario" @change="loadScenario">
-                <option value="">-- New/Unsaved --</option>
-                <option v-for="s in scenarios" :key="s.name" :value="s.name">{{ s.name }}</option>
-            </select>
-            <button class="btn btn-primary btn-sm" @click="saveScenario">Save</button>
-            <button class="btn btn-outline-danger btn-sm" v-if="selectedScenario" @click="deleteScenario">Delete</button>
+        <div class="col-lg-6 col-md-12 text-md-end mt-lg-0 mt-3">
+            <div class="d-inline-flex gap-2 align-items-center bg-white p-2 px-3 rounded-pill shadow-sm border" style="border-radius: 2rem;">
+                <label class="text-secondary small fw-medium m-0">Scenarios:</label>
+                <select class="form-select form-select-sm border-0 bg-transparent text-primary fw-semibold p-1" style="width: auto; outline:none;" v-model="selectedScenario" @change="loadScenario">
+                    <option value="">-- Unsaved Plan --</option>
+                    <option v-for="s in scenarios" :key="s.name" :value="s.name">{{ s.name }}</option>
+                </select>
+                <button class="btn btn-primary btn-sm rounded-pill px-3 py-1" @click="saveScenario">Save Plan</button>
+                <button class="btn btn-light btn-sm text-danger rounded-pill px-3 py-1" v-if="selectedScenario" @click="deleteScenario">Delete</button>
+            </div>
         </div>
     </div>
 
-    <ul class="nav nav-tabs mb-4" id="appTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="calc-tab" data-bs-toggle="tab" data-bs-target="#calc" type="button" role="tab">Calculation Matrix</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" id="viz-tab" data-bs-toggle="tab" data-bs-target="#viz" type="button" role="tab" @click="renderChart">Visualization</button>
-        </li>
-    </ul>
+    <div class="row gx-4 gy-4 mb-4">
+        
+        <div class="col-xl-8 col-lg-7">
+            <div class="premium-card">
+                <span class="card-label">Global Inputs</span>
+                <div class="row g-3">
+                    <div class="col-xl-3 col-md-6">
+                        <label class="form-label small text-secondary">Sanctioned Loan (₹)</label>
+                        <input type="number" class="form-control form-control-lg fw-semibold" v-model.number="inputs.loanAmount" @change="handleLoanAmountChange">
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <label class="form-label small text-secondary">Annual Interest (%)</label>
+                        <input type="number" step="0.1" class="form-control form-control-lg fw-semibold" v-model.number="inputs.loanRate" @input="calculate">
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <label class="form-label small text-secondary">Tenure (Months)</label>
+                        <input type="number" class="form-control form-control-lg fw-semibold" v-model.number="inputs.tenure" @input="calculate">
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <label class="form-label small text-secondary">Initial Offset (₹)</label>
+                        <input type="number" class="form-control form-control-lg fw-semibold" v-model.number="inputs.initialOffset" @input="calculate">
+                    </div>
+                    
+                    <div class="col-xl-3 col-md-6">
+                        <label class="form-label small text-secondary">SIP Return (%)</label>
+                        <input type="number" step="0.1" class="form-control" v-model.number="inputs.sipReturnRate" @input="calculate">
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <label class="form-label small text-secondary">Base Manual SIP (₹)</label>
+                        <input type="number" class="form-control" v-model.number="inputs.baseManualSip" @input="calculate">
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <label class="form-label small text-secondary">SIP Step-Up (%) p.a.</label>
+                        <input type="number" step="0.1" class="form-control" v-model.number="inputs.sipStepUp" @input="calculate">
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <label class="form-label small text-secondary">EMI Step-Up (%) p.a.</label>
+                        <input type="number" step="0.1" class="form-control" v-model.number="inputs.emiStepUp" @input="calculate">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-lg-5">
+            <div class="premium-card d-flex flex-column justify-content-between p-4">
+                <span class="card-label mb-3">Instant Insights</span>
+                
+                <div class="row g-2 flex-grow-1">
+                    <div class="col-6">
+                        <div class="stat-widget bg-light">
+                            <div class="stat-title">Base Full EMI</div>
+                            <div class="stat-value text-primary">{{ formatCurrency(baseEmi) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-widget bg-danger bg-opacity-10 border-danger border-opacity-10">
+                            <div class="stat-title text-danger fw-medium">Total Interest Paid</div>
+                            <div class="stat-value text-danger">{{ formatCurrency(summary.totalInterest) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-widget bg-primary bg-opacity-10 border-primary border-opacity-10">
+                            <div class="stat-title text-primary fw-medium">Actual Payoff Time</div>
+                            <div class="stat-value text-primary fs-4">{{ summary.payoffMonths }} <span class="fs-6 fw-medium text-secondary">/ {{ inputs.tenure }} months</span></div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-widget bg-success bg-opacity-10 border-success border-opacity-10">
+                            <div class="stat-title text-success fw-medium">Final SIP Corpus</div>
+                            <div class="stat-value text-success">{{ formatCurrency(summary.finalCorpus) }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center mb-5 mt-4">
+        <ul class="nav nav-pills gap-1" id="appTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="calc-tab" data-bs-toggle="tab" data-bs-target="#calc" type="button" role="tab">Data Matrix</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="viz-tab" data-bs-toggle="tab" data-bs-target="#viz" type="button" role="tab" @click="renderChart">Growth Chart</button>
+            </li>
+        </ul>
+    </div>
 
     <div class="tab-content" id="appTabsContent">
         <div class="tab-pane fade show active" id="calc" role="tabpanel">
             
-            <div class="row mb-4">
-                <div class="col-md-8">
-                    <div class="card shadow-sm">
-                        <div class="card-header bg-primary text-white">Global Variables</div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">Sanctioned Loan (₹)</label>
-                                    <input type="number" class="form-control" v-model.number="inputs.loanAmount" @change="handleLoanAmountChange">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Annual Loan Rate (%)</label>
-                                    <input type="number" step="0.1" class="form-control" v-model.number="inputs.loanRate" @input="calculate">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Tenure (Months)</label>
-                                    <input type="number" class="form-control" v-model.number="inputs.tenure" @input="calculate">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Initial Offset (₹)</label>
-                                    <input type="number" class="form-control" v-model.number="inputs.initialOffset" @input="calculate">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Annual SIP Return (%)</label>
-                                    <input type="number" step="0.1" class="form-control" v-model.number="inputs.sipReturnRate" @input="calculate">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Base Manual SIP (₹)</label>
-                                    <input type="number" class="form-control" v-model.number="inputs.baseManualSip" @input="calculate">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Annual SIP Step-Up (%)</label>
-                                    <input type="number" step="0.1" class="form-control" v-model.number="inputs.sipStepUp" @input="calculate">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Annual EMI Step-Up (%)</label>
-                                    <input type="number" step="0.1" class="form-control" v-model.number="inputs.emiStepUp" @input="calculate">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-md-4">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-success text-white">Live Summary</div>
-                        <div class="card-body d-flex flex-column justify-content-around">
-                            <div class="summary-card p-2 rounded mb-2">
-                                <small class="text-muted d-block">Base Full EMI</small>
-                                <strong>{{ formatCurrency(baseEmi) }}</strong>
-                            </div>
-                            <div class="summary-card p-2 rounded mb-2">
-                                <small class="text-muted d-block">Total Interest Paid</small>
-                                <strong class="text-danger">{{ formatCurrency(summary.totalInterest) }}</strong>
-                            </div>
-                            <div class="summary-card p-2 rounded mb-2">
-                                <small class="text-muted d-block">Actual Payoff Months</small>
-                                <strong class="text-primary">{{ summary.payoffMonths }} / {{ inputs.tenure }}</strong>
-                            </div>
-                            <div class="summary-card p-2 rounded">
-                                <small class="text-muted d-block">Final SIP Corpus</small>
-                                <strong class="text-success">{{ formatCurrency(summary.finalCorpus) }}</strong>
-                            </div>
-                        </div>
-                    </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <h5 class="m-0 fw-semibold">Interactive 20-Year Amortization Schedule</h5>
+                <div class="d-flex gap-2 align-items-center">
+                    <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" @click="resetSchedule">Clear Manual Schedule</button>
+                    <span class="text-muted fs-6">|</span>
+                    <button class="btn btn-success btn-sm rounded-pill px-3" @click="exportExcel">Excel Export</button>
+                    <button class="btn btn-danger btn-sm rounded-pill px-3" @click="exportPDF">PDF Export</button>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-between mb-2">
-                <button class="btn btn-outline-secondary btn-sm" @click="resetSchedule">Reset Disbursal Schedule</button>
-                <div class="gap-2 d-flex">
-                    <button class="btn btn-outline-success btn-sm" @click="exportExcel">Export to Excel</button>
-                    <button class="btn btn-outline-danger btn-sm" @click="exportPDF">Export to PDF</button>
-                </div>
-            </div>
-
-            <div class="table-responsive table-container border shadow-sm rounded">
-                <table class="table table-hover table-bordered mb-0" id="scheduleTable">
+            <div class="table-responsive table-container">
+                <table class="table table-striped table-hover table-sm table-borderless mb-0 align-middle text-center" id="scheduleTable">
                     <thead>
                         <tr>
-                            <th>Month</th>
-                            <th style="min-width: 120px;">Disbursed (Manual)</th>
-                            <th style="min-width: 120px;">Offset Dep. (Manual)</th>
-                            <th style="min-width: 120px;">Prepay (Manual)</th>
-                            <th>Cum. Disbursed</th>
-                            <th>SIP (Man+Off)</th>
+                            <th style="border-top-left-radius: 0.75rem;">Mo</th>
+                            <th>Disbursed <small>(Man.)</small></th>
+                            <th>Off. Dep. <small>(Man.)</small></th>
+                            <th>Prepay <small>(Man.)</small></th>
+                            <th>Cum. Disb.</th>
+                            <th>SIP (Mo)</th>
                             <th>Offset Bal</th>
-                            <th>Eff. Principal</th>
-                            <th>Interest</th>
+                            <th>Eff. Prin.</th>
+                            <th class="text-danger-light">Interest</th>
                             <th>EMI Paid</th>
                             <th>Prin. Paid</th>
-                            <th>Remaining Bal</th>
-                            <th>Total Corpus</th>
+                            <th>Rem. Bal</th>
+                            <th class="text-success-light" style="border-top-right-radius: 0.75rem;">Total Corpus</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="(row, index) in schedule" :key="index" :class="{'table-success': row.remainingBalance <= 0 && row.monthNo === summary.payoffMonths}">
-                            <td>{{ row.monthNo }}</td>
-                            <td><input type="number" class="form-control form-control-sm" v-model.number="row.manualDisbursed" @change="calculate"></td>
-                            <td><input type="number" class="form-control form-control-sm" v-model.number="row.manualOffsetDeposit" @change="calculate"></td>
-                            <td><input type="number" class="form-control form-control-sm" v-model.number="row.manualPrepayment" @change="calculate"></td>
+                        <tr v-for="(row, index) in schedule" :key="index" :class="{'highlight-payoff': row.remainingBalance <= 0.01 && row.monthNo === summary.payoffMonths}">
+                            <td class="fw-medium text-secondary">{{ row.monthNo }}</td>
+                            <td><input type="number" class="form-control minimal-input" v-model.number="row.manualDisbursed" @change="calculate"></td>
+                            <td><input type="number" class="form-control minimal-input" v-model.number="row.manualOffsetDeposit" @change="calculate"></td>
+                            <td><input type="number" class="form-control minimal-input" v-model.number="row.manualPrepayment" @change="calculate"></td>
                             <td>{{ formatCurrency(row.cumDisbursed) }}</td>
                             <td>{{ formatCurrency(row.totalSip) }}</td>
                             <td>{{ formatCurrency(row.offsetBalance) }}</td>
                             <td>{{ formatCurrency(row.effectivePrincipal) }}</td>
-                            <td class="text-danger">{{ formatCurrency(row.interest) }}</td>
+                            <td class="text-danger fw-medium">{{ formatCurrency(row.interest) }}</td>
                             <td>{{ formatCurrency(row.emiPaid) }}</td>
                             <td>{{ formatCurrency(row.principalPaid) }}</td>
-                            <td class="fw-bold">{{ formatCurrency(row.remainingBalance) }}</td>
-                            <td class="text-success">{{ formatCurrency(row.totalCorpus) }}</td>
+                            <td class="fw-bold fs-6">{{ formatCurrency(row.remainingBalance) }}</td>
+                            <td class="text-success fw-bold">{{ formatCurrency(row.totalCorpus) }}</td>
                         </tr>
                     </tbody>
                 </table>
@@ -169,9 +253,9 @@
         </div>
 
         <div class="tab-pane fade" id="viz" role="tabpanel">
-            <div class="card shadow-sm p-4">
-                <h5 class="card-title text-center mb-4">Wealth vs Debt Progression</h5>
-                <canvas id="loanChart" height="100"></canvas>
+            <div class="premium-card p-4">
+                <h5 class="card-title text-center fw-semibold mb-4 tracking-tight">Net Worth Evolution: Debt Burn vs. Wealth Creation</h5>
+                <canvas id="loanChart" height="120"></canvas>
             </div>
         </div>
     </div>
@@ -179,6 +263,11 @@
 
 <script>
     const { createApp } = Vue;
+
+    // Define custom Chart JS indigo theme colors
+    const INDIGO = '#4f46e5';
+    const RED = '#ef4444';
+    const GREEN = '#10b981';
 
     createApp({
         data() {
@@ -219,8 +308,7 @@
                 return (pv * rate * Math.pow(1 + rate, nper)) / (Math.pow(1 + rate, nper) - 1);
             },
             initializeSchedule() {
-                // BUG FIX: Automatically set Month 1 disbursement to the full loan amount 
-                // so the calculator has the full debt to work with.
+                // Initialize 240 months, setting first month to full loan amount default
                 this.schedule = Array.from({ length: 240 }, (_, i) => ({
                     monthNo: i + 1,
                     manualDisbursed: i === 0 ? this.inputs.loanAmount : 0, 
@@ -235,7 +323,7 @@
                 }
             },
             handleLoanAmountChange() {
-                // If you change the global loan amount, automatically update Month 1 to match
+                // Keep month 1 disbursal synced if global loan input changes
                 this.schedule[0].manualDisbursed = this.inputs.loanAmount;
                 this.calculate();
             },
@@ -270,15 +358,17 @@
                         row.principalPaid = 0;
                         row.remainingBalance = 0;
                     } else {
-                        let balToCalculateInterest = (i === 0 ? row.cumDisbursed : prevRemaining + row.manualDisbursed) - row.offsetBalance;
+                        let totalDebtForCurrentMo = (i === 0 ? row.cumDisbursed : prevRemaining + row.manualDisbursed);
+                        let balToCalculateInterest = totalDebtForCurrentMo - row.offsetBalance;
                         row.effectivePrincipal = Math.max(0, balToCalculateInterest);
                         row.interest = row.effectivePrincipal * monthlyLoanRate;
                         
-                        let totalOwed = (i === 0 ? row.cumDisbursed : prevRemaining + row.manualDisbursed) + row.interest;
-                        row.emiPaid = Math.min(currentEmiLimit, totalOwed);
+                        let totalOwedWithInterest = totalDebtForCurrentMo + row.interest;
+                        row.emiPaid = Math.min(currentEmiLimit, totalOwedWithInterest);
                         
+                        // Principal reduction is (EMI - Interest) PLUS any prepayment
                         row.principalPaid = (row.emiPaid - row.interest) + row.manualPrepayment;
-                        row.remainingBalance = Math.max(0, (i === 0 ? row.cumDisbursed : prevRemaining + row.manualDisbursed) - row.principalPaid);
+                        row.remainingBalance = Math.max(0, totalDebtForCurrentMo - row.principalPaid);
                         
                         totalInterest += row.interest;
                         payoffMonths = row.monthNo;
@@ -287,6 +377,7 @@
                     row.totalSip = currentSip;
                     row.totalCorpus = (prevCorpus * (1 + monthlySipRate)) + row.totalSip;
 
+                    // Push states forward to next loop
                     prevCumDisbursed = row.cumDisbursed;
                     prevOffset = row.offsetBalance;
                     prevRemaining = row.remainingBalance;
@@ -297,18 +388,19 @@
                 this.summary.payoffMonths = payoffMonths;
                 this.summary.finalCorpus = prevCorpus;
                 
+                // Refresh chart if it exists
                 if(this.chartInstance) this.renderChart();
             },
             
             // --- SCENARIO MANAGEMENT (LOCALSTORAGE) ---
             loadScenariosList() {
-                const saved = localStorage.getItem('loanScenarios');
+                const saved = localStorage.getItem('loanWealthPlans');
                 if (saved) {
                     this.scenarios = JSON.parse(saved);
                 }
             },
             saveScenario() {
-                let name = prompt("Enter a name for this scenario (e.g., 'Aggressive Offset'):", this.selectedScenario || "");
+                let name = prompt("Enter a memorable name for this plan:", this.selectedScenario || "Scenario A");
                 if (!name) return;
                 
                 let scenarioData = {
@@ -319,12 +411,12 @@
                 
                 let index = this.scenarios.findIndex(s => s.name === name);
                 if (index !== -1) {
-                    this.scenarios[index] = scenarioData; // Overwrite
+                    this.scenarios[index] = scenarioData; // Update existing
                 } else {
-                    this.scenarios.push(scenarioData);
+                    this.scenarios.push(scenarioData); // Add new
                 }
                 
-                localStorage.setItem('loanScenarios', JSON.stringify(this.scenarios));
+                localStorage.setItem('loanWealthPlans', JSON.stringify(this.scenarios));
                 this.selectedScenario = name;
             },
             loadScenario() {
@@ -344,7 +436,7 @@
                 if (!this.selectedScenario) return;
                 if (confirm(`Are you sure you want to delete '${this.selectedScenario}'?`)) {
                     this.scenarios = this.scenarios.filter(s => s.name !== this.selectedScenario);
-                    localStorage.setItem('loanScenarios', JSON.stringify(this.scenarios));
+                    localStorage.setItem('loanWealthPlans', JSON.stringify(this.scenarios));
                     this.selectedScenario = '';
                     this.initializeSchedule();
                     this.calculate();
@@ -354,11 +446,13 @@
             // --- VISUALIZATION & EXPORT ---
             renderChart() {
                 const ctx = document.getElementById('loanChart').getContext('2d');
+                
+                // Destroy old instance to avoid memory leak and render glitch
                 if (this.chartInstance) {
                     this.chartInstance.destroy();
                 }
 
-                const labels = this.schedule.map(r => `M${r.monthNo}`);
+                const labels = this.schedule.map(r => `Month ${r.monthNo}`);
                 const debtData = this.schedule.map(r => r.remainingBalance);
                 const wealthData = this.schedule.map(r => r.totalCorpus);
 
@@ -370,22 +464,35 @@
                             {
                                 label: 'Remaining Loan Balance',
                                 data: debtData,
-                                borderColor: 'rgb(255, 99, 132)',
-                                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                borderColor: RED,
+                                backgroundColor: RED + '08', // very faded fill
                                 fill: true,
-                                tension: 0.4
+                                tension: 0.1, // Minimal curve for professional look
+                                pointRadius: 0 // Hide points to look sleeker
                             },
                             {
-                                label: 'Total SIP Corpus',
+                                label: 'Total SIP Corpus (Wealth)',
                                 data: wealthData,
-                                borderColor: 'rgb(75, 192, 192)',
-                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderColor: GREEN,
+                                backgroundColor: GREEN + '08',
                                 fill: true,
-                                tension: 0.4
+                                tension: 0.1,
+                                pointRadius: 0
                             }
                         ]
                     },
-                    options: { responsive: true, interaction: { mode: 'index', intersect: false } }
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        scales: {
+                            y: { grid: { color: '#F3F4F6' } },
+                            x: { grid: { display: false } }
+                        },
+                        plugins: {
+                            legend: { labels: { font: { family: "'Inter'", weight: 500 } } }
+                        }
+                    }
                 });
             },
             exportExcel() {
@@ -397,11 +504,16 @@
             },
             exportPDF() {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('l', 'mm', 'a4'); 
+                const doc = new jsPDF('l', 'mm', 'a4'); // Landscape for the wide table
                 
-                doc.setFontSize(16);
-                doc.text("Smart Loan & SIP Schedule", 14, 15);
+                doc.setFontSize(18);
+                doc.setTextColor(79, 70, 229); // Indigo color
+                doc.text("Projected Loan Amortization & Wealth Growth", 14, 15);
                 
+                doc.setFontSize(10);
+                doc.setTextColor(100);
+                doc.text(`Scenario: ${this.selectedScenario || 'Unsaved'}`, 14, 21);
+
                 const tableData = this.schedule.map(r => [
                     r.monthNo, 
                     Math.round(r.manualDisbursed), 
@@ -409,19 +521,29 @@
                     Math.round(r.manualPrepayment),
                     Math.round(r.effectivePrincipal),
                     Math.round(r.interest),
+                    Math.round(r.emiPaid),
                     Math.round(r.remainingBalance),
                     Math.round(r.totalCorpus)
                 ]);
 
+                // autoTable plugin for clean tables in PDF
                 doc.autoTable({
-                    startY: 20,
-                    head: [['Month', 'Disbursed', 'Cum. Disb.', 'Prepay', 'Eff. Principal', 'Interest', 'Rem. Balance', 'Total Corpus']],
+                    startY: 25,
+                    head: [['Month', 'Disb (Mo)', 'Cum. Disb', 'Prepay', 'Eff. Principal', 'Interest', 'EMI Paid', 'Rem. Bal', 'Total Corpus']],
                     body: tableData,
-                    styles: { fontSize: 8 },
-                    headStyles: { fillColor: [13, 110, 253] }
+                    styles: { fontSize: 7, font: 'times' }, // Smaller font for PDF fitting
+                    headStyles: { fillColor: [79, 70, 229], halign: 'center' }, // Indigo header
+                    columnStyles: {
+                        0: { halign: 'center', cellWidth: 10 },
+                        1: { halign: 'right' },
+                        2: { halign: 'right' },
+                        3: { halign: 'right', fontStyle: 'bold' },
+                        7: { halign: 'right', fontStyle: 'bold' },
+                        8: { halign: 'right', textColor: [16, 185, 129] } // Success color
+                    }
                 });
 
-                doc.save('SmartLoanCalculator.pdf');
+                doc.save('SmartLoan_WealthReport.pdf');
             }
         }
     }).mount('#app');
