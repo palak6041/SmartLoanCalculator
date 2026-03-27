@@ -3,8 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Loan & SIP | Premium Dashboard</title>
     
+    <title>Smart Loan & SIP Calculator | Plan Your Financial Freedom</title>
+    <meta name="title" content="Smart Loan & SIP Calculator | Plan Your Financial Freedom">
+    <meta name="description" content="A free, interactive financial dashboard to calculate under-construction home loans, offset accounts, and SIP wealth progression.">
+    <meta name="keywords" content="loan calculator, SIP calculator, offset account calculator, home loan amortization, real estate finance, step-up SIP">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://palak6041.github.io/SmartLoanCalculator/">
+    <meta property="og:title" content="Smart Loan & SIP Calculator | Plan Your Financial Freedom">
+    <meta property="og:description" content="Calculate your home loan payoff time and visualize your SIP wealth creation with this interactive dashboard.">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -103,16 +113,16 @@
 </head>
 <body>
 
-<div id="app" class="container-fluid px-md-5 py-4">
+<main id="app" class="container-fluid px-md-5 py-4">
     
-    <div class="row align-items-center mb-4 gx-4">
+    <header class="row align-items-center mb-4 gx-4">
         <div class="col-12">
-            <h2 class="text-indigo m-0 fw-bold tracking-tight" style="color:var(--primary)">Smart Loan & Wealth Dashboard</h2>
+            <h1 class="text-indigo m-0 fw-bold tracking-tight h2" style="color:var(--primary)">Smart Loan & Wealth Dashboard</h1>
             <p class="text-secondary m-0">Dynamic calculator with Offset, Step-up, and SIP progression</p>
         </div>
-    </div>
+    </header>
 
-    <div class="row gx-4 gy-4 mb-4">
+    <section aria-label="Calculator Inputs and Scenarios" class="row gx-4 gy-4 mb-4">
         
         <div class="col-xl-8 col-lg-7">
             
@@ -200,9 +210,9 @@
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="d-flex justify-content-center mb-5 mt-4">
+    <nav aria-label="Dashboard Navigation" class="d-flex justify-content-center mb-5 mt-4">
         <ul class="nav nav-pills gap-1" id="appTabs" role="tablist">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active" id="calc-tab" data-bs-toggle="tab" data-bs-target="#calc" type="button" role="tab">Data Matrix</button>
@@ -211,13 +221,13 @@
                 <button class="nav-link" id="viz-tab" data-bs-toggle="tab" data-bs-target="#viz" type="button" role="tab" @click="showCharts">Visual Dashboard</button>
             </li>
         </ul>
-    </div>
+    </nav>
 
     <div class="tab-content" id="appTabsContent">
         <div class="tab-pane fade show active" id="calc" role="tabpanel">
             
             <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-                <h5 class="m-0 fw-semibold">Interactive 20-Year Amortization Schedule</h5>
+                <h2 class="m-0 fw-semibold h5">Interactive 20-Year Amortization Schedule</h2>
                 <div class="d-flex gap-2 align-items-center">
                     <button class="btn btn-outline-secondary btn-sm rounded-pill px-3" @click="resetSchedule">Clear Manual Schedule</button>
                     <span class="text-muted fs-6">|</span>
@@ -271,7 +281,7 @@
                 
                 <div class="col-lg-6">
                     <div class="viz-card">
-                        <h6 class="viz-title">True Cost of Loan: Principal vs. Interest</h6>
+                        <h3 class="viz-title h6">True Cost of Loan: Principal vs. Interest</h3>
                         <div class="chart-container d-flex align-items-center justify-content-center">
                             <canvas id="doughnutChart"></canvas>
                         </div>
@@ -280,7 +290,7 @@
 
                 <div class="col-lg-6">
                     <div class="viz-card">
-                        <h6 class="viz-title">EMI Breakdown: Interest Paid vs. Principal Repaid</h6>
+                        <h3 class="viz-title h6">EMI Breakdown: Interest Paid vs. Principal Repaid</h3>
                         <div class="chart-container">
                             <canvas id="amortizationChart"></canvas>
                         </div>
@@ -289,7 +299,7 @@
 
                 <div class="col-lg-6">
                     <div class="viz-card">
-                        <h6 class="viz-title">SIP Wealth: Capital Invested vs. Compound Returns</h6>
+                        <h3 class="viz-title h6">SIP Wealth: Capital Invested vs. Compound Returns</h3>
                         <div class="chart-container">
                             <canvas id="wealthCompositionChart"></canvas>
                         </div>
@@ -298,7 +308,7 @@
 
                 <div class="col-lg-6">
                     <div class="viz-card">
-                        <h6 class="viz-title">Offset Advantage: Actual Owed vs. Effective Principal</h6>
+                        <h3 class="viz-title h6">Offset Advantage: Actual Owed vs. Effective Principal</h3>
                         <div class="chart-container">
                             <canvas id="offsetAdvantageChart"></canvas>
                         </div>
@@ -308,7 +318,7 @@
             </div>
         </div>
     </div>
-</div>
+</main>
 
 <script>
     const { createApp } = Vue;
@@ -381,7 +391,6 @@
                 this.calculate();
             },
             calculate() {
-                // Failsafe conversions
                 let lAmt = Number(this.inputs.loanAmount) || 0;
                 let lRate = Number(this.inputs.loanRate) || 0;
                 let lTen = Number(this.inputs.tenure) || 240;
@@ -406,12 +415,10 @@
                 let payoffMonths = 0;
 
                 for (let i = 0; i < lTen; i++) {
-                    // Safety check if user dynamically reduces tenure array size
                     if(!this.schedule[i]) break; 
                     
                     let row = this.schedule[i];
                     
-                    // Force strict numbers for manual user inputs to prevent blank cell math errors
                     let mDisb = Number(row.manualDisbursed) || 0;
                     let mOff = Number(row.manualOffsetDeposit) || 0;
                     let mPre = Number(row.manualPrepayment) || 0;
@@ -468,7 +475,7 @@
                 if(this.charts.doughnut) this.refreshCharts();
             },
             
-            // --- SCENARIO MANAGEMENT (WITH SAFETY TRY/CATCH) ---
+            // --- SCENARIO MANAGEMENT ---
             loadScenariosList() {
                 try {
                     const saved = localStorage.getItem('loanWealthPlans');
