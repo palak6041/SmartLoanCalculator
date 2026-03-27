@@ -16,13 +16,13 @@
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <style>
         :root {
-            --primary: #4f46e5; /* Indigo */
+            --primary: #4f46e5;
             --primary-light: #e0e7ff;
-            --secondary: #64748b; /* Slate Gray */
+            --secondary: #64748b;
             --bg-body: #F9FAFB;
             --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
             --danger: #ef4444;
@@ -36,7 +36,6 @@
             -webkit-font-smoothing: antialiased;
         }
         
-        /* Modern Cards */
         .premium-card {
             background: #fff;
             border-radius: 1rem;
@@ -47,24 +46,20 @@
         }
         .card-label { font-weight: 600; font-size: 0.85rem; color: var(--secondary); text-transform: uppercase; letter-spacing: 0.05rem; margin-bottom: 0.5rem; display: block;}
         
-        /* Inputs styling */
         .form-control { border-color: #E5E7EB; border-radius: 0.5rem; padding: 0.6rem 0.75rem; font-size: 0.95rem;}
         .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
         .form-control.minimal-input { border: 1px solid transparent; background: transparent; padding: 0.2rem; text-align: center; border-radius: 0.25rem;}
         .form-control.minimal-input:hover { border-color: #E5E7EB; background: #fff;}
         .form-control.minimal-input:focus { border-color: var(--primary); background: #fff;}
 
-        /* Modern Tabs (Pill style) */
         .nav-pills { background: #fff; padding: 0.25rem; border-radius: 2rem; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02); }
         .nav-pills .nav-link { border-radius: 2rem; color: var(--secondary); padding: 0.6rem 1.5rem; font-weight: 500;}
         .nav-pills .nav-link.active { background-color: var(--primary); color: #fff; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.2); }
 
-        /* Minimal Stat Widgets */
         .stat-widget { padding: 1rem; border-radius: 0.75rem; border: 1px solid #F3F4F6;}
         .stat-title { color: var(--secondary); font-size: 0.8rem; font-weight: 500; margin-bottom: 0.25rem; }
         .stat-value { font-size: 1.25rem; font-weight: 700; color: #111827; }
 
-        /* Table minimal polish */
         .table-container { max-height: 600px; overflow-y: auto; background: #fff; border-radius: 0.75rem; box-shadow: var(--card-shadow); border: none; }
         .table { border-collapse: collapse; }
         .table > thead > tr > th { 
@@ -76,14 +71,12 @@
         .table td { padding: 0.75rem 0.5rem; font-size: 0.85rem; vertical-align: middle; color: #374151; border-color: #F3F4F6; }
         .table-striped > tbody > tr:nth-of-type(odd) > * { --bs-table-accent-bg: #F9FAFB;}
         
-        /* Premium Buttons */
         .btn { border-radius: 0.5rem; font-weight: 500; padding: 0.6rem 1rem; font-size: 0.9rem;}
         .btn-primary { background-color: var(--primary); border-color: var(--primary); }
         .btn-primary:hover { background-color: #4338ca; border-color: #4338ca; }
         .btn-outline-primary { color: var(--primary); border-color: var(--primary); }
         .btn-outline-primary:hover { background-color: var(--primary); color: #fff; }
 
-        /* Payoff highlight */
         tr.highlight-payoff td { color: #fff; background-color: var(--success) !important; font-weight: 600;}
         tr.highlight-payoff .minimal-input { color: #fff; }
     </style>
@@ -92,28 +85,29 @@
 
 <div id="app" class="container-fluid px-md-5 py-4">
     
-    <div class="row align-items-center mb-5 gx-4">
-        <div class="col-lg-6 col-md-12">
+    <div class="row align-items-center mb-4 gx-4">
+        <div class="col-12">
             <h2 class="text-indigo m-0 fw-bold tracking-tight" style="color:var(--primary)">Smart Loan & Wealth Dashboard</h2>
             <p class="text-secondary m-0">Dynamic calculator with Offset, Step-up, and SIP progression</p>
-        </div>
-        
-        <div class="col-lg-6 col-md-12 text-md-end mt-lg-0 mt-3">
-            <div class="d-inline-flex gap-2 align-items-center bg-white p-2 px-3 rounded-pill shadow-sm border" style="border-radius: 2rem;">
-                <label class="text-secondary small fw-medium m-0">Scenarios:</label>
-                <select class="form-select form-select-sm border-0 bg-transparent text-primary fw-semibold p-1" style="width: auto; outline:none;" v-model="selectedScenario" @change="loadScenario">
-                    <option value="">-- Unsaved Plan --</option>
-                    <option v-for="s in scenarios" :key="s.name" :value="s.name">{{ s.name }}</option>
-                </select>
-                <button class="btn btn-primary btn-sm rounded-pill px-3 py-1" @click="saveScenario">Save Plan</button>
-                <button class="btn btn-light btn-sm text-danger rounded-pill px-3 py-1" v-if="selectedScenario" @click="deleteScenario">Delete</button>
-            </div>
         </div>
     </div>
 
     <div class="row gx-4 gy-4 mb-4">
         
         <div class="col-xl-8 col-lg-7">
+            
+            <div class="premium-card py-3 px-4 mb-3 d-flex flex-wrap justify-content-between align-items-center" style="height: auto;">
+                <span class="card-label m-0" style="font-size: 0.8rem;"><i class="bi bi-folder2-open"></i> Scenario Manager</span>
+                <div class="d-flex gap-2 align-items-center mt-2 mt-md-0">
+                    <select class="form-select form-select-sm fw-semibold" style="width: 200px;" v-model="selectedScenario" @change="loadScenario">
+                        <option value="">-- Unsaved Plan --</option>
+                        <option v-for="s in scenarios" :key="s.name" :value="s.name">{{ s.name }}</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm py-1" @click="saveScenario">Save Plan</button>
+                    <button class="btn btn-light btn-sm text-danger py-1" v-if="selectedScenario" @click="deleteScenario">Delete</button>
+                </div>
+            </div>
+
             <div class="premium-card">
                 <span class="card-label">Global Inputs</span>
                 <div class="row g-3">
@@ -171,16 +165,16 @@
                             <div class="stat-value text-danger">{{ formatCurrency(summary.totalInterest) }}</div>
                         </div>
                     </div>
-                    <div class="col-6">
-                        <div class="stat-widget bg-primary bg-opacity-10 border-primary border-opacity-10">
-                            <div class="stat-title text-primary fw-medium">Actual Payoff Time</div>
-                            <div class="stat-value text-primary fs-4">{{ summary.payoffMonths }} <span class="fs-6 fw-medium text-secondary">/ {{ inputs.tenure }} months</span></div>
+                    <div class="col-12">
+                        <div class="stat-widget bg-primary bg-opacity-10 border-primary border-opacity-10 text-center py-4">
+                            <div class="stat-title text-primary fw-medium mb-1">Actual Payoff Time</div>
+                            <div class="stat-value text-primary" style="font-size: 2.5rem;">{{ summary.payoffMonths }} <span class="fs-5 fw-medium text-secondary">/ {{ inputs.tenure }} months</span></div>
                         </div>
                     </div>
-                    <div class="col-6">
-                        <div class="stat-widget bg-success bg-opacity-10 border-success border-opacity-10">
+                    <div class="col-12">
+                        <div class="stat-widget bg-success bg-opacity-10 border-success border-opacity-10 text-center">
                             <div class="stat-title text-success fw-medium">Final SIP Corpus</div>
-                            <div class="stat-value text-success">{{ formatCurrency(summary.finalCorpus) }}</div>
+                            <div class="stat-value text-success fs-3">{{ formatCurrency(summary.finalCorpus) }}</div>
                         </div>
                     </div>
                 </div>
@@ -194,7 +188,7 @@
                 <button class="nav-link active" id="calc-tab" data-bs-toggle="tab" data-bs-target="#calc" type="button" role="tab">Data Matrix</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="viz-tab" data-bs-toggle="tab" data-bs-target="#viz" type="button" role="tab" @click="renderChart">Growth Chart</button>
+                <button class="nav-link" id="viz-tab" data-bs-toggle="tab" data-bs-target="#viz" type="button" role="tab" @click="showChart">Growth Chart</button>
             </li>
         </ul>
     </div>
@@ -264,7 +258,6 @@
 <script>
     const { createApp } = Vue;
 
-    // Define custom Chart JS indigo theme colors
     const INDIGO = '#4f46e5';
     const RED = '#ef4444';
     const GREEN = '#10b981';
@@ -308,7 +301,6 @@
                 return (pv * rate * Math.pow(1 + rate, nper)) / (Math.pow(1 + rate, nper) - 1);
             },
             initializeSchedule() {
-                // Initialize 240 months, setting first month to full loan amount default
                 this.schedule = Array.from({ length: 240 }, (_, i) => ({
                     monthNo: i + 1,
                     manualDisbursed: i === 0 ? this.inputs.loanAmount : 0, 
@@ -323,7 +315,6 @@
                 }
             },
             handleLoanAmountChange() {
-                // Keep month 1 disbursal synced if global loan input changes
                 this.schedule[0].manualDisbursed = this.inputs.loanAmount;
                 this.calculate();
             },
@@ -366,7 +357,6 @@
                         let totalOwedWithInterest = totalDebtForCurrentMo + row.interest;
                         row.emiPaid = Math.min(currentEmiLimit, totalOwedWithInterest);
                         
-                        // Principal reduction is (EMI - Interest) PLUS any prepayment
                         row.principalPaid = (row.emiPaid - row.interest) + row.manualPrepayment;
                         row.remainingBalance = Math.max(0, totalDebtForCurrentMo - row.principalPaid);
                         
@@ -377,7 +367,6 @@
                     row.totalSip = currentSip;
                     row.totalCorpus = (prevCorpus * (1 + monthlySipRate)) + row.totalSip;
 
-                    // Push states forward to next loop
                     prevCumDisbursed = row.cumDisbursed;
                     prevOffset = row.offsetBalance;
                     prevRemaining = row.remainingBalance;
@@ -388,11 +377,10 @@
                 this.summary.payoffMonths = payoffMonths;
                 this.summary.finalCorpus = prevCorpus;
                 
-                // Refresh chart if it exists
                 if(this.chartInstance) this.renderChart();
             },
             
-            // --- SCENARIO MANAGEMENT (LOCALSTORAGE) ---
+            // --- SCENARIO MANAGEMENT ---
             loadScenariosList() {
                 const saved = localStorage.getItem('loanWealthPlans');
                 if (saved) {
@@ -411,9 +399,9 @@
                 
                 let index = this.scenarios.findIndex(s => s.name === name);
                 if (index !== -1) {
-                    this.scenarios[index] = scenarioData; // Update existing
+                    this.scenarios[index] = scenarioData;
                 } else {
-                    this.scenarios.push(scenarioData); // Add new
+                    this.scenarios.push(scenarioData);
                 }
                 
                 localStorage.setItem('loanWealthPlans', JSON.stringify(this.scenarios));
@@ -443,11 +431,18 @@
                 }
             },
 
-            // --- VISUALIZATION & EXPORT ---
+            // --- VISUALIZATION ---
+            showChart() {
+                // FIX: Added a slight delay so Bootstrap can change 'display:none' to 'display:block'
+                // before Chart.js tries to draw. Without this, Chart.js renders at 0px width.
+                setTimeout(() => {
+                    this.renderChart();
+                }, 150);
+            },
             renderChart() {
-                const ctx = document.getElementById('loanChart').getContext('2d');
+                const ctx = document.getElementById('loanChart');
+                if(!ctx) return;
                 
-                // Destroy old instance to avoid memory leak and render glitch
                 if (this.chartInstance) {
                     this.chartInstance.destroy();
                 }
@@ -456,7 +451,7 @@
                 const debtData = this.schedule.map(r => r.remainingBalance);
                 const wealthData = this.schedule.map(r => r.totalCorpus);
 
-                this.chartInstance = new Chart(ctx, {
+                this.chartInstance = new Chart(ctx.getContext('2d'), {
                     type: 'line',
                     data: {
                         labels: labels,
@@ -465,10 +460,10 @@
                                 label: 'Remaining Loan Balance',
                                 data: debtData,
                                 borderColor: RED,
-                                backgroundColor: RED + '08', // very faded fill
+                                backgroundColor: RED + '08',
                                 fill: true,
-                                tension: 0.1, // Minimal curve for professional look
-                                pointRadius: 0 // Hide points to look sleeker
+                                tension: 0.1,
+                                pointRadius: 0
                             },
                             {
                                 label: 'Total SIP Corpus (Wealth)',
@@ -495,6 +490,8 @@
                     }
                 });
             },
+
+            // --- EXPORTS ---
             exportExcel() {
                 const cleanData = JSON.parse(JSON.stringify(this.schedule));
                 const ws = XLSX.utils.json_to_sheet(cleanData);
@@ -504,10 +501,10 @@
             },
             exportPDF() {
                 const { jsPDF } = window.jspdf;
-                const doc = new jsPDF('l', 'mm', 'a4'); // Landscape for the wide table
+                const doc = new jsPDF('l', 'mm', 'a4'); 
                 
                 doc.setFontSize(18);
-                doc.setTextColor(79, 70, 229); // Indigo color
+                doc.setTextColor(79, 70, 229);
                 doc.text("Projected Loan Amortization & Wealth Growth", 14, 15);
                 
                 doc.setFontSize(10);
@@ -526,20 +523,19 @@
                     Math.round(r.totalCorpus)
                 ]);
 
-                // autoTable plugin for clean tables in PDF
                 doc.autoTable({
                     startY: 25,
                     head: [['Month', 'Disb (Mo)', 'Cum. Disb', 'Prepay', 'Eff. Principal', 'Interest', 'EMI Paid', 'Rem. Bal', 'Total Corpus']],
                     body: tableData,
-                    styles: { fontSize: 7, font: 'times' }, // Smaller font for PDF fitting
-                    headStyles: { fillColor: [79, 70, 229], halign: 'center' }, // Indigo header
+                    styles: { fontSize: 7, font: 'times' },
+                    headStyles: { fillColor: [79, 70, 229], halign: 'center' },
                     columnStyles: {
                         0: { halign: 'center', cellWidth: 10 },
                         1: { halign: 'right' },
                         2: { halign: 'right' },
                         3: { halign: 'right', fontStyle: 'bold' },
                         7: { halign: 'right', fontStyle: 'bold' },
-                        8: { halign: 'right', textColor: [16, 185, 129] } // Success color
+                        8: { halign: 'right', textColor: [16, 185, 129] }
                     }
                 });
 
