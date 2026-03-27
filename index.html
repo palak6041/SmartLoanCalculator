@@ -10,8 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.3.4/dist/vue.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -84,7 +83,7 @@
         /* Visualization Grid Specific CSS */
         .chart-container {
             position: relative;
-            height: 300px; /* Base height for chart cards */
+            height: 300px; 
             width: 100%;
         }
         .viz-card {
@@ -314,11 +313,9 @@
 <script>
     const { createApp } = Vue;
 
-    // Define dashboard color theme
     const INDIGO = '#4f46e5';
     const RED = '#ef4444';
     const GREEN = '#10b981';
-    const AMBER = '#f59e0b';
     const SLATE = '#64748b';
 
     createApp({
@@ -341,7 +338,6 @@
                     payoffMonths: 0,
                     finalCorpus: 0
                 },
-                // Hold multiple chart instances
                 charts: {
                     doughnut: null,
                     amortization: null,
@@ -357,11 +353,12 @@
             this.initializeSchedule();
             this.calculate();
             
-            // Handle browser resize for charts
-            window.addEventListener('resize', this.refreshCharts);
+            // Safe resize listener to prevent 'this' context errors
+            window.addEventListener('resize', () => { this.refreshCharts(); });
         },
         methods: {
             formatCurrency(value) {
+                if (value === undefined || value === null || isNaN(value)) return '₹0';
                 return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(value);
             },
             pmt(rate, nper, pv) {
@@ -387,29 +384,47 @@
                 this.calculate();
             },
             calculate() {
-                const monthlyLoanRate = (this.inputs.loanRate / 100) / 12;
-                const monthlySipRate = (this.inputs.sipReturnRate / 100) / 12;
+                // Failsafe conversions
+                let lAmt = Number(this.inputs.loanAmount) || 0;
+                let lRate = Number(this.inputs.loanRate) || 0;
+                let lTen = Number(this.inputs.tenure) || 240;
+                let initOff = Number(this.inputs.initialOffset) || 0;
+                let sRate = Number(this.inputs.sipReturnRate) || 0;
+                let bSip = Number(this.inputs.baseManualSip) || 0;
+                let sStep = Number(this.inputs.sipStepUp) || 0;
+                let eStep = Number(this.inputs.emiStepUp) || 0;
+
+                const monthlyLoanRate = (lRate / 100) / 12;
+                const monthlySipRate = (sRate / 100) / 12;
                 
-                this.baseEmi = this.pmt(monthlyLoanRate, this.inputs.tenure, this.inputs.loanAmount);
+                this.baseEmi = this.pmt(monthlyLoanRate, lTen, lAmt);
                 
                 let prevCumDisbursed = 0;
-                let prevOffset = this.inputs.initialOffset;
+                let prevOffset = initOff;
                 let prevRemaining = 0;
                 let prevCorpus = 0;
-                let cumCapitalInvested = 0; // For wealth composition chart
+                let cumCapitalInvested = 0; 
 
                 let totalInterest = 0;
                 let payoffMonths = 0;
 
-                for (let i = 0; i < this.inputs.tenure; i++) {
-                    let row = this.schedule[i];
-                    let stepUpFactor = Math.floor(i / 12);
+                for (let i = 0; i < lTen; i++) {
+                    // Safety check if user dynamically reduces tenure array size
+                    if(!this.schedule[i]) break; 
                     
-                    let currentSip = this.inputs.baseManualSip * Math.pow(1 + (this.inputs.sipStepUp/100), stepUpFactor);
-                    let currentEmiLimit = this.baseEmi * Math.pow(1 + (this.inputs.emiStepUp/100), stepUpFactor);
+                    let row = this.schedule[i];
+                    
+                    // Force strict numbers for manual user inputs to prevent blank cell math errors
+                    let mDisb = Number(row.manualDisbursed) || 0;
+                    let mOff = Number(row.manualOffsetDeposit) || 0;
+                    let mPre = Number(row.manualPrepayment) || 0;
+                    
+                    let stepUpFactor = Math.floor(i / 12);
+                    let currentSip = bSip * Math.pow(1 + (sStep/100), stepUpFactor);
+                    let currentEmiLimit = this.baseEmi * Math.pow(1 + (eStep/100), stepUpFactor);
 
-                    row.cumDisbursed = prevCumDisbursed + row.manualDisbursed;
-                    row.offsetBalance = prevOffset + row.manualOffsetDeposit;
+                    row.cumDisbursed = prevCumDisbursed + mDisb;
+                    row.offsetBalance = prevOffset + mOff;
                     
                     if (i > 0 && prevRemaining <= 0.01) {
                         row.effectivePrincipal = 0;
@@ -417,9 +432,9 @@
                         row.emiPaid = 0;
                         row.principalPaid = 0;
                         row.remainingBalance = 0;
-                        row.trueLoanBalance = 0; // Pre-offset balance
+                        row.trueLoanBalance = 0; 
                     } else {
-                        let totalDebtForCurrentMo = (i === 0 ? row.cumDisbursed : prevRemaining + row.manualDisbursed);
+                        let totalDebtForCurrentMo = (i === 0 ? row.cumDisbursed : prevRemaining + mDisb);
                         row.trueLoanBalance = totalDebtForCurrentMo; 
                         
                         let balToCalculateInterest = totalDebtForCurrentMo - row.offsetBalance;
@@ -429,7 +444,7 @@
                         let totalOwedWithInterest = totalDebtForCurrentMo + row.interest;
                         row.emiPaid = Math.min(currentEmiLimit, totalOwedWithInterest);
                         
-                        row.principalPaid = (row.emiPaid - row.interest) + row.manualPrepayment;
+                        row.principalPaid = (row.emiPaid - row.interest) + mPre;
                         row.remainingBalance = Math.max(0, totalDebtForCurrentMo - row.principalPaid);
                         
                         totalInterest += row.interest;
@@ -438,9 +453,8 @@
 
                     row.totalSip = currentSip;
                     
-                    // Wealth composition tracking
                     cumCapitalInvested += currentSip;
-                    row.totalCorpus Capital = cumCapitalInvested;
+                    row.totalCorpusCapital = cumCapitalInvested;
                     
                     row.totalCorpus = (prevCorpus * (1 + monthlySipRate)) + row.totalSip;
 
@@ -454,15 +468,18 @@
                 this.summary.payoffMonths = payoffMonths;
                 this.summary.finalCorpus = prevCorpus;
                 
-                // Live update charts if visible
                 if(this.charts.doughnut) this.refreshCharts();
             },
             
-            // --- SCENARIO MANAGEMENT ---
+            // --- SCENARIO MANAGEMENT (WITH SAFETY TRY/CATCH) ---
             loadScenariosList() {
-                const saved = localStorage.getItem('loanWealthPlans');
-                if (saved) {
-                    this.scenarios = JSON.parse(saved);
+                try {
+                    const saved = localStorage.getItem('loanWealthPlans');
+                    if (saved) {
+                        this.scenarios = JSON.parse(saved);
+                    }
+                } catch (error) {
+                    console.warn("Local storage is disabled by browser settings.");
                 }
             },
             saveScenario() {
@@ -482,7 +499,11 @@
                     this.scenarios.push(scenarioData);
                 }
                 
-                localStorage.setItem('loanWealthPlans', JSON.stringify(this.scenarios));
+                try {
+                    localStorage.setItem('loanWealthPlans', JSON.stringify(this.scenarios));
+                } catch (error) {
+                    alert("Could not save to browser memory. LocalStorage might be blocked.");
+                }
                 this.selectedScenario = name;
             },
             loadScenario() {
@@ -502,7 +523,9 @@
                 if (!this.selectedScenario) return;
                 if (confirm(`Are you sure you want to delete '${this.selectedScenario}'?`)) {
                     this.scenarios = this.scenarios.filter(s => s.name !== this.selectedScenario);
-                    localStorage.setItem('loanWealthPlans', JSON.stringify(this.scenarios));
+                    try {
+                        localStorage.setItem('loanWealthPlans', JSON.stringify(this.scenarios));
+                    } catch(e) {}
                     this.selectedScenario = '';
                     this.initializeSchedule();
                     this.calculate();
@@ -511,14 +534,13 @@
 
             // --- VISUALIZATION DASHBOARD ---
             showCharts() {
-                // Delay render slightly to allow Bootstrap tab transition and ensure canvas has width
                 setTimeout(() => {
                     this.refreshCharts();
                 }, 200);
             },
             refreshCharts() {
-                // Only render if tab is visible (canvas has width)
-                if (document.getElementById('doughnutChart').clientWidth === 0) return;
+                const docCheck = document.getElementById('doughnutChart');
+                if (!docCheck || docCheck.clientWidth === 0) return;
                 
                 this.renderDoughnutChart();
                 this.renderAmortizationChart();
@@ -526,7 +548,6 @@
                 this.renderOffsetChart();
             },
             
-            // Default global chart options
             getGlobalChartOptions() {
                 return {
                     responsive: true,
@@ -540,7 +561,7 @@
                                     let label = context.dataset.label || '';
                                     if (label) label += ': ';
                                     if (context.parsed.y !== null) label += this.formatCurrency(context.parsed.y);
-                                    else label += this.formatCurrency(context.parsed); // For doughnut
+                                    else label += this.formatCurrency(context.parsed);
                                     return label;
                                 }
                             }
@@ -553,7 +574,6 @@
                 }
             },
 
-            // 1. True Cost of Loan (Principal vs Interest)
             renderDoughnutChart() {
                 const ctx = document.getElementById('doughnutChart').getContext('2d');
                 if (this.charts.doughnut) this.charts.doughnut.destroy();
@@ -588,15 +608,13 @@
                 });
             },
 
-            // 2. Amortization Shift (Stacked Bar)
             renderAmortizationChart() {
                 const ctx = document.getElementById('amortizationChart').getContext('2d');
                 if (this.charts.amortization) this.charts.amortization.destroy();
 
                 const labels = this.schedule.map(r => `M${r.monthNo}`);
                 const interestData = this.schedule.map(r => r.interest);
-                // Principal paid inside EMI (excludes manual prepayment for this specific visualization)
-                const principalInData = this.schedule.map(r => r.principalPaid - r.manualPrepayment); 
+                const principalInData = this.schedule.map(r => r.principalPaid - (Number(r.manualPrepayment) || 0)); 
 
                 let options = this.getGlobalChartOptions();
                 options.scales.x.stacked = true;
@@ -615,7 +633,6 @@
                 });
             },
 
-            // 3. Wealth Composition (Stacked Area)
             renderWealthChart() {
                 const ctx = document.getElementById('wealthCompositionChart').getContext('2d');
                 if (this.charts.wealth) this.charts.wealth.destroy();
@@ -627,7 +644,6 @@
                 let options = this.getGlobalChartOptions();
                 options.scales.x.stacked = true;
                 options.scales.y.stacked = true;
-                // Area chart look
                 options.plugins.tooltip.position = 'nearest'; 
 
                 this.charts.wealth = new Chart(ctx, {
@@ -643,7 +659,6 @@
                 });
             },
 
-            // 4. Offset Advantage (Line with gap)
             renderOffsetChart() {
                 const ctx = document.getElementById('offsetAdvantageChart').getContext('2d');
                 if (this.charts.offset) this.charts.offset.destroy();
