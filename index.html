@@ -27,6 +27,7 @@
             --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
             --danger: #ef4444;
             --success: #10b981;
+            --warning: #f59e0b;
         }
 
         body { 
@@ -79,6 +80,26 @@
 
         tr.highlight-payoff td { color: #fff; background-color: var(--success) !important; font-weight: 600;}
         tr.highlight-payoff .minimal-input { color: #fff; }
+
+        /* Visualization Grid Specific CSS */
+        .chart-container {
+            position: relative;
+            height: 300px; /* Base height for chart cards */
+            width: 100%;
+        }
+        .viz-card {
+            padding: 1.25rem;
+            border-radius: 1rem;
+            background: #fff;
+            box-shadow: var(--card-shadow);
+        }
+        .viz-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -188,7 +209,7 @@
                 <button class="nav-link active" id="calc-tab" data-bs-toggle="tab" data-bs-target="#calc" type="button" role="tab">Data Matrix</button>
             </li>
             <li class="nav-item" role="presentation">
-                <button class="nav-link" id="viz-tab" data-bs-toggle="tab" data-bs-target="#viz" type="button" role="tab" @click="showChart">Growth Chart</button>
+                <button class="nav-link" id="viz-tab" data-bs-toggle="tab" data-bs-target="#viz" type="button" role="tab" @click="showCharts">Visual Dashboard</button>
             </li>
         </ul>
     </div>
@@ -247,9 +268,44 @@
         </div>
 
         <div class="tab-pane fade" id="viz" role="tabpanel">
-            <div class="premium-card p-4">
-                <h5 class="card-title text-center fw-semibold mb-4 tracking-tight">Net Worth Evolution: Debt Burn vs. Wealth Creation</h5>
-                <canvas id="loanChart" height="120"></canvas>
+            <div class="row g-4">
+                
+                <div class="col-lg-6">
+                    <div class="viz-card">
+                        <h6 class="viz-title">True Cost of Loan: Principal vs. Interest</h6>
+                        <div class="chart-container d-flex align-items-center justify-content-center">
+                            <canvas id="doughnutChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="viz-card">
+                        <h6 class="viz-title">EMI Breakdown: Interest Paid vs. Principal Repaid</h6>
+                        <div class="chart-container">
+                            <canvas id="amortizationChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="viz-card">
+                        <h6 class="viz-title">SIP Wealth: Capital Invested vs. Compound Returns</h6>
+                        <div class="chart-container">
+                            <canvas id="wealthCompositionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="viz-card">
+                        <h6 class="viz-title">Offset Advantage: Actual Owed vs. Effective Principal</h6>
+                        <div class="chart-container">
+                            <canvas id="offsetAdvantageChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -258,9 +314,12 @@
 <script>
     const { createApp } = Vue;
 
+    // Define dashboard color theme
     const INDIGO = '#4f46e5';
     const RED = '#ef4444';
     const GREEN = '#10b981';
+    const AMBER = '#f59e0b';
+    const SLATE = '#64748b';
 
     createApp({
         data() {
@@ -282,7 +341,13 @@
                     payoffMonths: 0,
                     finalCorpus: 0
                 },
-                chartInstance: null,
+                // Hold multiple chart instances
+                charts: {
+                    doughnut: null,
+                    amortization: null,
+                    wealth: null,
+                    offset: null
+                },
                 scenarios: [],
                 selectedScenario: ''
             }
@@ -291,6 +356,9 @@
             this.loadScenariosList();
             this.initializeSchedule();
             this.calculate();
+            
+            // Handle browser resize for charts
+            window.addEventListener('resize', this.refreshCharts);
         },
         methods: {
             formatCurrency(value) {
@@ -328,6 +396,7 @@
                 let prevOffset = this.inputs.initialOffset;
                 let prevRemaining = 0;
                 let prevCorpus = 0;
+                let cumCapitalInvested = 0; // For wealth composition chart
 
                 let totalInterest = 0;
                 let payoffMonths = 0;
@@ -348,8 +417,11 @@
                         row.emiPaid = 0;
                         row.principalPaid = 0;
                         row.remainingBalance = 0;
+                        row.trueLoanBalance = 0; // Pre-offset balance
                     } else {
                         let totalDebtForCurrentMo = (i === 0 ? row.cumDisbursed : prevRemaining + row.manualDisbursed);
+                        row.trueLoanBalance = totalDebtForCurrentMo; 
+                        
                         let balToCalculateInterest = totalDebtForCurrentMo - row.offsetBalance;
                         row.effectivePrincipal = Math.max(0, balToCalculateInterest);
                         row.interest = row.effectivePrincipal * monthlyLoanRate;
@@ -365,6 +437,11 @@
                     }
 
                     row.totalSip = currentSip;
+                    
+                    // Wealth composition tracking
+                    cumCapitalInvested += currentSip;
+                    row.totalCorpus Capital = cumCapitalInvested;
+                    
                     row.totalCorpus = (prevCorpus * (1 + monthlySipRate)) + row.totalSip;
 
                     prevCumDisbursed = row.cumDisbursed;
@@ -377,7 +454,8 @@
                 this.summary.payoffMonths = payoffMonths;
                 this.summary.finalCorpus = prevCorpus;
                 
-                if(this.chartInstance) this.renderChart();
+                // Live update charts if visible
+                if(this.charts.doughnut) this.refreshCharts();
             },
             
             // --- SCENARIO MANAGEMENT ---
@@ -431,61 +509,161 @@
                 }
             },
 
-            // --- VISUALIZATION ---
-            showChart() {
+            // --- VISUALIZATION DASHBOARD ---
+            showCharts() {
+                // Delay render slightly to allow Bootstrap tab transition and ensure canvas has width
                 setTimeout(() => {
-                    this.renderChart();
-                }, 150);
+                    this.refreshCharts();
+                }, 200);
             },
-            renderChart() {
-                const ctx = document.getElementById('loanChart');
-                if(!ctx) return;
+            refreshCharts() {
+                // Only render if tab is visible (canvas has width)
+                if (document.getElementById('doughnutChart').clientWidth === 0) return;
                 
-                if (this.chartInstance) {
-                    this.chartInstance.destroy();
+                this.renderDoughnutChart();
+                this.renderAmortizationChart();
+                this.renderWealthChart();
+                this.renderOffsetChart();
+            },
+            
+            // Default global chart options
+            getGlobalChartOptions() {
+                return {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { font: { family: "'Inter'", size: 12, weight: 500 }, usePointStyle: true, boxWidth: 8 } },
+                        tooltip: { 
+                            backgroundColor: '#1f2937', padding: 12, bodyFont: { family: "'Inter'" }, titleFont: { family: "'Inter'", weight: 700 },
+                            callbacks: {
+                                label: (context) => {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) label += this.formatCurrency(context.parsed.y);
+                                    else label += this.formatCurrency(context.parsed); // For doughnut
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { family: "'Inter'", size: 11 }, color: SLATE } },
+                        y: { grid: { color: '#F3F4F6' }, ticks: { font: { family: "'Inter'", size: 11 }, color: SLATE, callback: (value) => '₹' + value.toLocaleString('en-IN') } }
+                    }
                 }
+            },
 
-                const labels = this.schedule.map(r => `Month ${r.monthNo}`);
-                const debtData = this.schedule.map(r => r.remainingBalance);
-                const wealthData = this.schedule.map(r => r.totalCorpus);
+            // 1. True Cost of Loan (Principal vs Interest)
+            renderDoughnutChart() {
+                const ctx = document.getElementById('doughnutChart').getContext('2d');
+                if (this.charts.doughnut) this.charts.doughnut.destroy();
 
-                this.chartInstance = new Chart(ctx.getContext('2d'), {
+                const totalPrincipal = this.inputs.loanAmount;
+                const totalInterest = this.summary.totalInterest;
+
+                this.charts.doughnut = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Total Principal Borrowed', 'Total Interest Paid'],
+                        datasets: [{
+                            data: [totalPrincipal, totalInterest],
+                            backgroundColor: [INDIGO, RED],
+                            borderWidth: 0,
+                            hoverOffset: 15
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '75%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { font: { family: "'Inter'", weight: 500 }, usePointStyle: true } },
+                            tooltip: { 
+                                callbacks: {
+                                    label: (context) => ` ${this.formatCurrency(context.parsed)} (${((context.parsed / (totalPrincipal + totalInterest)) * 100).toFixed(1)}%)`
+                                }
+                            }
+                        }
+                    }
+                });
+            },
+
+            // 2. Amortization Shift (Stacked Bar)
+            renderAmortizationChart() {
+                const ctx = document.getElementById('amortizationChart').getContext('2d');
+                if (this.charts.amortization) this.charts.amortization.destroy();
+
+                const labels = this.schedule.map(r => `M${r.monthNo}`);
+                const interestData = this.schedule.map(r => r.interest);
+                // Principal paid inside EMI (excludes manual prepayment for this specific visualization)
+                const principalInData = this.schedule.map(r => r.principalPaid - r.manualPrepayment); 
+
+                let options = this.getGlobalChartOptions();
+                options.scales.x.stacked = true;
+                options.scales.y.stacked = true;
+
+                this.charts.amortization = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Principal Repaid', data: principalInData, backgroundColor: GREEN, barPercentage: 1, categoryPercentage: 1 },
+                            { label: 'Interest Charged', data: interestData, backgroundColor: RED, barPercentage: 1, categoryPercentage: 1 }
+                        ]
+                    },
+                    options: options
+                });
+            },
+
+            // 3. Wealth Composition (Stacked Area)
+            renderWealthChart() {
+                const ctx = document.getElementById('wealthCompositionChart').getContext('2d');
+                if (this.charts.wealth) this.charts.wealth.destroy();
+
+                const labels = this.schedule.map(r => `M${r.monthNo}`);
+                const capitalData = this.schedule.map(r => r.totalCorpusCapital);
+                const returnsData = this.schedule.map(r => r.totalCorpus - r.totalCorpusCapital);
+
+                let options = this.getGlobalChartOptions();
+                options.scales.x.stacked = true;
+                options.scales.y.stacked = true;
+                // Area chart look
+                options.plugins.tooltip.position = 'nearest'; 
+
+                this.charts.wealth = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: labels,
                         datasets: [
-                            {
-                                label: 'Remaining Loan Balance',
-                                data: debtData,
-                                borderColor: RED,
-                                backgroundColor: RED + '08',
-                                fill: true,
-                                tension: 0.1,
-                                pointRadius: 0
-                            },
-                            {
-                                label: 'Total SIP Wealth',
-                                data: wealthData,
-                                borderColor: GREEN,
-                                backgroundColor: GREEN + '08',
-                                fill: true,
-                                tension: 0.1,
-                                pointRadius: 0
-                            }
+                            { label: 'Compound Returns', data: returnsData, borderColor: GREEN, backgroundColor: GREEN + '20', fill: true, tension: 0.1, pointRadius: 0 },
+                            { label: 'Capital Invested', data: capitalData, borderColor: INDIGO, backgroundColor: INDIGO + '20', fill: true, tension: 0.1, pointRadius: 0 }
                         ]
                     },
-                    options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false,
-                        interaction: { mode: 'index', intersect: false },
-                        scales: {
-                            y: { grid: { color: '#F3F4F6' } },
-                            x: { grid: { display: false } }
-                        },
-                        plugins: {
-                            legend: { labels: { font: { family: "'Inter'", weight: 500 } } }
-                        }
-                    }
+                    options: options
+                });
+            },
+
+            // 4. Offset Advantage (Line with gap)
+            renderOffsetChart() {
+                const ctx = document.getElementById('offsetAdvantageChart').getContext('2d');
+                if (this.charts.offset) this.charts.offset.destroy();
+
+                const labels = this.schedule.map(r => `M${r.monthNo}`);
+                const actualOwedData = this.schedule.map(r => r.trueLoanBalance);
+                const effPrincipalData = this.schedule.map(r => r.effectivePrincipal);
+
+                let options = this.getGlobalChartOptions();
+                
+                this.charts.offset = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Actual Owed (Pre-Offset)', data: actualOwedData, borderColor: RED, borderDash: [5, 5], borderWidth: 2, pointRadius: 0, tension: 0.1 },
+                            { label: 'Effective Principal (Interest Base)', data: effPrincipalData, borderColor: INDIGO, backgroundColor: INDIGO + '10', fill: true, pointRadius: 0, tension: 0.1 }
+                        ]
+                    },
+                    options: options
                 });
             },
 
